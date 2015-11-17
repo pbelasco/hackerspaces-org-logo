@@ -10,8 +10,9 @@ License: CC0 / Public Domain
 import svgwrite
 from svgwrite import shapes, container
 
-grid = 10              # Grid size
-radius = 2.5           # Radius of a dot
+_type = 'sq'           # [dt|sq] Desired type of drawing. Dot or Square.
+gridy = 10             # Grid size
+radius = 6.5           # Radius of a dot, or side of a square
 height = 566           # Height of the entire logo
 width = 800            # Width of the entire logo
 spacing = 20           # Spacing between spaceship and text
@@ -68,7 +69,6 @@ def get_background():
     """
     return dwg.rect((0, 0), (width, height), fill=color_bg)
 
-
 def get_dot_group(pixels):
     """
     Given a list of lines, create an SVG group with dots on the grid.
@@ -81,26 +81,46 @@ def get_dot_group(pixels):
         for x, dot in enumerate(line, start=1):
             if dot == 'o':
                 args = {
-                    'center': (x * grid, y * grid),
+                    'center': (x * gridy, y * gridy),
                     'r': radius,
                     'stroke': color_fg,
                     'fill': color_fg,
                 }
                 circle = shapes.Circle(**args)
                 group.add(circle)
-
     return group
 
+
+def get_sq_group(pixels):
+    """
+    Given a list of lines, create an SVG group with dots on the grid.
+    """
+    # Create group
+    group = container.Group()
+
+    # Add dots
+    for y, line in enumerate(pixels, start=1):
+        for x, dot in enumerate(line, start=1):
+            if dot == 'o':
+                args = {
+                    'insert':   (x*gridy, y*gridy), 
+                    'size':     (radius, radius),
+                    'fill':     color_fg, 
+                    'stroke':   color_fg
+                }
+                rect = dwg.rect(**args)
+                group.add(rect)    
+    return group
 
 def get_spaceship():
     """
     Create SVG group with spaceship.
     """
     # Get dots
-    group = get_dot_group(spaceship)
-
+    if _type == 'sq': group = get_sq_group(spaceship)
+    if _type == 'dt': group = get_dot_group(spaceship)
     # Translate group to center
-    spaceship_width = len(spaceship[0]) * grid
+    spaceship_width = len(spaceship[0]) * gridy
     group.translate((width / 2) - (spaceship_width / 2))
 
     return group
@@ -111,11 +131,12 @@ def get_text():
     Create SVG group with text.
     """
     # Get dots
-    group = get_dot_group(text)
+    if _type == 'sq': group = get_sq_group(text)
+    if _type == 'dt': group = get_dot_group(text)
 
     # Translate group to center
-    text_width = len(text[0]) * grid
-    spaceship_height = len(spaceship) * grid
+    text_width = len(text[0]) * gridy
+    spaceship_height = len(spaceship) * gridy
     group.translate((width / 2) - (text_width / 2), spaceship_height + spacing)
 
     return group
@@ -135,7 +156,7 @@ if __name__ == '__main__':
     group.add(get_text())
 
     # Translate group
-    content_height = len(spaceship) * grid + spacing + len(text) * grid
+    content_height = len(spaceship) * gridy+ spacing + len(text) * gridy
     group.translate(0, height / 2 - content_height / 2)
 
     # Add group to drawing
